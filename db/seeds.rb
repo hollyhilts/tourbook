@@ -126,6 +126,8 @@ venues = [
   {venue: "L'ANTI Bar & Spectacles", city: 'Quebec, QC'}
 ]
 
+skill_names = Skill.pluck(:name)
+
 tours.each do |tour|
   t = Tour.new(
     name: tour[:name],
@@ -134,6 +136,7 @@ tours.each do |tour|
   file = URI.open(tour[:logo])
   t.logo.attach(io: file, filename: "logo.jpg", content_type: 'image/png')
   t.save!
+
   10.times do
     venue = venues.sample
 
@@ -186,74 +189,34 @@ tours.each do |tour|
         administrator: true
       )
     end
-      users_array = random_users.to_a.clone
-      tms = []
+
+    users_array = random_users.to_a.clone.shuffle
+    # tms = []
+
     5.times do
-      user = users_array.sample
-      job_title = user.skills.sample.name
-      if tms.include?(job_title)
-        job_title = user.skills.sample.name
-      end
+      user = users_array.shift
+      event_skills = Skill.joins(job_skills: {user: {tour_members: :event}}).where("events.id = ?", event.id).distinct.pluck(:name)
+
+      unused_skills = skill_names - event_skills
+
+      # job_title = user.skills.sample.name
+      # if tms.include?(job_title)
+      #   job_title = user.skills.sample.name
+      # end
       tm = TourMember.new(
         event: event,
         user: user,
-        job_title: job_title
+        job_title: unused_skills.sample
       )
-      tms << job_title
+      # tms << job_title
       tm.save!
-      users_array.delete(user)
+      # users_array.delete(user)
     end
     # event.tour = t
   end
 end
 
 puts "created #{Tour.all.count} tours, #{Event.all.count} events & #{TourMember.all.count} tour members!"
-
-# puts 'creating events'
-
-# Tour.all.each do |tour|
-#   10.times do
-#     venue = venues.sample
-#     event = Event.new(
-#       schedule: '',
-#       show_start_at: rand(30..60).days.from_now.beginning_of_day + rand(18..22).hours,
-#       venue: venue[:venue],
-#       city: venue[:city]
-#     )
-#     event.tour = tour
-#     TourMember.new(event: event, )
-#     event.save!
-#   end
-# end
-# puts "created #{Event.all.count} events!"
-
-# puts 'creating tour members'
-
-# tour_members = [
-#   {user: User.find_by(email: 'freddy@tunez.com'), event: Tour.find_by(name: 'Moto Sounds').events.first, job_title: 'Drums', administrator: false},
-#   {user: User.find_by(email: 'freddy@tunez.com'), event: Tour.find_by(name: 'Man in Love').events.first, job_title: 'Drums', administrator: false},
-#   {user: User.find_by(email: 'freddy@tunez.com'), event: Tour.find_by(name: 'Hairless Heroes').events.first, job_title: 'Drums', administrator: false},
-#   {user: User.find_by(email: 'steph@ilovemycat.com'), event: Tour.find_by(name: 'Hairless Heroes').events.first, job_title: 'Singer', administrator: false},
-#   {user: User.find_by(email: 'a-m@muzak.com'), event: Tour.find_by(name: 'Hairless Heroes').events.first, job_title: 'Sound Tech', administrator: true},
-#   {user: User.find_by(email: 'cathy@mgmt.com'), event: Tour.find_by(name: 'Man in Love').events.first, job_title: 'Manager', administrator: true},
-#   {user: User.find_by(email: 'cathy@mgmt.com'), event: Tour.find_by(name: 'Silence Amplified').events.first, job_title: 'Sound Tech', administrator: false},
-#   # {user: User.find_by(email:), tour: Tour.find_by(name:), job_title: , administrator: }
-# ]
-
-# tour_members.each do |tm|
-#   TourMember.create!(
-#     user: tm[:user],
-#     event: tm[:event],
-#     job_title: tm[:job_title],
-#     administrator: tm[:administrator]
-#   )
-# end
-
-# Event.all.each do |event|
-# end
-
-# puts "created #{TourMember.all.count} tour members !"
-
 
 puts 'creating broadcasts'
 
